@@ -5,7 +5,7 @@
 
 # --- Step 1: Environment Setup ---
 echo "--- Setting up environment ---"
-conda activate vizgen
+mamba activate vizgen
 
 # --- Define Sample ---
 export FOLDER="p30-E165"
@@ -19,6 +19,7 @@ export DATA_PATH="E:/Githubs/SPATIAL_data/data_${FOLDER}"
 # --- Define Custom Segmentation Configuration ---
 # This should be the name of your segmentation JSON file with the custom model
 export CONFIG_NAME="${SAMPLE}_default_1_ZLevel_cpsam"
+
 export CONFIG_DIR="../Vpt-segmentation" # Assumes JSON is in the Vpt-segmentation folder
 export CONFIG_FILE_NAME="${CONFIG_DIR}/${CONFIG_NAME}.json"
 
@@ -35,7 +36,7 @@ mkdir -p logs
 
 # --- Step 2: Prepare Full Segmentation Specification ---
 echo "--- Step 2: Preparing full segmentation specification ---"
-vpt prepare-segmentation \
+vpt --processes 20 prepare-segmentation \
     --segmentation-algorithm "${CONFIG_FILE_NAME}" \
     --input-images "${DATA_PATH}/${REGION}/images/mosaic_(?P<stain>[\\w|-]+)_z(?P<z>[0-9]+).tif" \
     --input-micron-to-mosaic "${DATA_PATH}/${REGION}/images/micron_to_mosaic_pixel_transform.csv" \
@@ -44,15 +45,16 @@ vpt prepare-segmentation \
 
 # --- Step 3: Filter Spec and Get Tile Indices for ROI ---
 echo "--- Step 3: Filtering spec and getting tile indices for ROI ---"
-ROI_TILE_INDICES=$(python ${ROI_WORKFLOW_DIR}/filter_spec_and_get_indices.py \
+ROI_TILE_INDICES=$(python ${ROI_WORKFLOW_DIR}/filter_spec_and_get_indices_v2.py \
     --input-spec "${FULL_SPEC_FILE}" \
     --input-roi "${ROI_COORDS_FILE}" \
+    --transform "${DATA_PATH}/${REGION}/images/micron_to_mosaic_pixel_transform.csv" \
     --output-spec "${ROI_SPEC_FILE}")
 
 echo "Found tile indices for ROI: ${ROI_TILE_INDICES}"
 
 # --- Step 4: Run Segmentation on ROI Tiles ---
-echo "--- Step 4: Running segmentation on ROI tiles ---"
+echo "--- Step 4: Running segmentation on ROI tiles sequentially ---"
 for TILE_INDEX in ${ROI_TILE_INDICES}
 do
     echo "--- Running segmentation on tile ${TILE_INDEX} ---"
@@ -62,36 +64,48 @@ do
         --overwrite
 done
 
-# --- Step 5: Create Symlinks for Compile Step ---
-echo "--- Step 5: Creating symlinks for compile step ---"
+echo "--- Contents of result_tiles directory after segmentation ---"
+ls -l "${ROI_OUTPUT_DIR}/result_tiles"
+
+# --- Step 5: Rename Output Files for Compile Step ---
+echo "--- Step 5: Renaming output files for compile step ---"
+
+# Find all generated cell parquet files and rename them sequentially
 i=0
-for TILE_INDEX in ${ROI_TILE_INDICES}
+CELL_FILES=$(ls -v "${ROI_OUTPUT_DIR}/result_tiles/cell_"*.parquet)
+for f in ${CELL_FILES}
 do
-    # Create symlinks only if the source file exists
-    if [ -f "${ROI_OUTPUT_DIR}/result_tiles/cell_${TILE_INDEX}.parquet" ]; then
-        ln -sf "cell_${TILE_INDEX}.parquet" "${ROI_OUTPUT_DIR}/result_tiles/cell_${i}.parquet"
-    fi
-    if [ -f "${ROI_OUTPUT_DIR}/result_tiles/nucleus_${TILE_INDEX}.parquet" ]; then
-        ln -sf "nucleus_${TILE_INDEX}.parquet" "${ROI_OUTPUT_DIR}/result_tiles/nucleus_${i}.parquet"
-    fi
+    echo "Renaming ${f} to cell_${i}.parquet"
+    mv "${f}" "${ROI_OUTPUT_DIR}/result_tiles/cell_${i}.parquet"
+    i=$((i+1))
+done
+
+# Find all generated nucleus parquet files and rename them sequentially
+i=0
+# The 2>/dev/null suppresses the "No such file or directory" error if no nucleus files are found.
+NUCLEUS_FILES=$(ls -v "${ROI_OUTPUT_DIR}/result_tiles/nucleus_"*.parquet 2>/dev/null)
+for f in ${NUCLEUS_FILES}
+do
+    echo "Renaming ${f} to nucleus_${i}.parquet"
+    mv "${f}" "${ROI_OUTPUT_DIR}/result_tiles/nucleus_${i}.parquet"
     i=$((i+1))
 done
 
 # --- Step 6: Compile Segmentation Results ---
 echo "--- Step 6: Compiling segmentation results ---"
-vpt compile-tile-segmentation \
+vpt --processes 20 compile-tile-segmentation \
     --input-segmentation-parameters "${ROI_SPEC_FILE}" \
     --overwrite
 
 # --- Step 7: Downstream Analysis ---
 echo "--- Step 7: Performing downstream analysis on ROI ---"
-vpt partition-transcripts \
+vpt --processes 20 partition-transcripts \
     --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
     --input-transcripts "${DATA_PATH}/${REGION}/detected_transcripts.csv" \
     --output-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
     --overwrite
 
-vpt derive-entity-metadata \
+vpt --processes 20 derive-entity-metadata \
     --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
     --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
     --output-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
@@ -99,7 +113,7 @@ vpt derive-entity-metadata \
 
 # --- Step 8: Update VZG File with ROI Segmentation ---
 echo "--- Step 8: Updating VZG file ---"
-vpt update-vzg \
+vpt --processes 20 update-vzg \
     --input-vzg "${DATA_PATH}/${REGION}/data.vzg2" \
     --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
     --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \

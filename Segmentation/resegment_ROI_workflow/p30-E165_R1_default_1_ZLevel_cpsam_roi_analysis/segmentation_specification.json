@@ -1,5 +1,5 @@
 {
-  "timestamp": 1750349024.744336,
+  "timestamp": 1750421970.696159,
   "input_args": {
     "segmentation_algorithm": "../Vpt-segmentation/p30-E165_R1_default_1_ZLevel_cpsam.json",
     "input_path": "E:/Githubs/SPATIAL_data/data_p30-E165/R1/images/mosaic_(?P<stain>[\\w|-]+)_z(?P<z>[0-9]+).tif",
@@ -12,9 +12,9 @@
     "python": "3.10.18 | packaged by conda-forge | (main, Jun  4 2025, 14:42:04) [MSC v.1943 64 bit (AMD64)]",
     "vpt": "1.3.0",
     "vpt_core": "1.2.0",
-    "vpt_plugin_cellpose": "1.0.2",
     "vpt_plugin_cellpose2": "1.0.1",
     "vpt_plugin_watershed": "1.0.2",
+    "vpt_plugin_cellpose": "1.0.2",
     "geopandas": "0.14.4",
     "shapely": "2.1.1",
     "s3fs": "2024.2.0",
@@ -50,14 +50,14 @@
     ],
     "images": [
       {
-        "channel": "DAPI",
-        "z_layer": 3,
-        "full_path": "E:/Githubs/SPATIAL_data/data_p30-E165/R1/images/mosaic_DAPI_z3.tif"
-      },
-      {
         "channel": "PolyT",
         "z_layer": 3,
         "full_path": "E:/Githubs/SPATIAL_data/data_p30-E165/R1/images/mosaic_PolyT_z3.tif"
+      },
+      {
+        "channel": "DAPI",
+        "z_layer": 3,
+        "full_path": "E:/Githubs/SPATIAL_data/data_p30-E165/R1/images/mosaic_DAPI_z3.tif"
       }
     ]
   },
