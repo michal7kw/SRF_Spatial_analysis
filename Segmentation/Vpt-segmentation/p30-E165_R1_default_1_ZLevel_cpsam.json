@@ -16,7 +16,7 @@
       "segmentation_properties": {
         "model": null,
         "model_dimensions": "2D",
-        "custom_weights": "cpsam",
+        "custom_weights": "cpsam_20250616_070020",
         "version": "latest"
       },
       "task_input_data": [
@@ -56,7 +56,7 @@
       "segmentation_parameters": {
         "nuclear_channel": "DAPI",
         "entity_fill_channel": "PolyT",
-        "diameter": 70,
+        "diameter": 77,
         "flow_threshold": 0.95,
         "mask_threshold": -5.5,
         "min_size": 500

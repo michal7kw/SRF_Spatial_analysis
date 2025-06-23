@@ -27,3 +27,7 @@ __pycache__
 Segmentation/resegment_ROI_workflow/vzg_build_temp/
 Segmentation/Vpt-segmentation/image_patches/old/
 *.npy
+**/*temp/
+Segmentation/resegment_ROI_workflow/p30-E165_R1_default_1_ZLevel_cpsam_v2_compatible_roi_analysis
+Segmentation/resegment_ROI_workflow/p30-E165_R1_default_1_ZLevel_cpsam_roi_analysis
+Segmentation/resegment_ROI_workflow/cpsam

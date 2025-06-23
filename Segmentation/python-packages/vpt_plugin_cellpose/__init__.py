@@ -14,12 +14,12 @@ class CellposeSegProperties:
 class CellposeSegParameters:
     # Fields without default values
     nuclear_channel: str
-    entity_fill_channel: str
     diameter: int
     flow_threshold: float
     min_size: int # Renamed from minimum_mask_size and moved
 
     # Fields with default values
+    entity_fill_channel: Optional[str] = None
     cellprob_threshold: Optional[float] = None
     mask_threshold: Optional[float] = None # For fallback
     stitch_threshold: Optional[float] = None

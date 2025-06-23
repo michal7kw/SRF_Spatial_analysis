@@ -21,8 +21,12 @@ class SegmentationMethod(SegmentationBase):
         transcripts: Optional[pd.DataFrame] = None,
     ) -> Union[SegmentationResult, Iterable[SegmentationResult]]:
         properties = CellposeSegProperties(**segmentation_properties)
+        if "minimum_mask_size" in segmentation_parameters and "min_size" not in segmentation_parameters:
+            segmentation_parameters["min_size"] = segmentation_parameters.pop("minimum_mask_size")
         parameters = CellposeSegParameters(**segmentation_parameters)
 
+        if images is None:
+            raise ValueError("Image data is required for segmentation.")
         masks = predict.run(images, properties, parameters)
         return generate_polygons_from_mask(masks, polygon_parameters)
 
