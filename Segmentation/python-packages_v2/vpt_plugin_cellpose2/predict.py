@@ -1,13 +1,19 @@
 import warnings
+import os
+import torch
 from typing import Dict, List, Set, Tuple
 
 import cv2
 import numpy as np
-from cellpose import models
-from cellpose.contrib import openvino_utils
+# from cellpose.contrib import openvino_utils
 from vpt_core.io.image import ImageSet
-
+from vpt_core import log
+ 
 from vpt_plugin_cellpose2 import CellposeSegParameters, CellposeSegProperties
+
+# Force CPU usage for Cellpose
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+torch.cuda.is_available = lambda: False
 
 MINIMUM_IMAGE_SIZE_OPENCV = 513
 warnings.filterwarnings("ignore", message=".*the `scipy.ndimage.filters` namespace is deprecated.*")
@@ -21,7 +27,9 @@ def run(images: ImageSet, properties: CellposeSegProperties, parameters: Cellpos
     channels, index_map = assign_channel_index(properties.channel_map, parameters)
     image = convert_imageset_to_rgb_image(images, properties.channel_map)
     empty_z_levels, to_segment_z = detect_empty_z_planes(image, index_map)
-
+    log.info(f"Detected {len(empty_z_levels)} empty z-planes.")
+    log.info(f"Z-planes to segment: {to_segment_z}")
+ 
     # If all z-levels are empty, there is nothing to do. Return an empty array.
     if len(empty_z_levels) == image.shape[0]:
         return np.zeros((image.shape[0],) + image.shape[1:-1])
@@ -46,27 +54,45 @@ def extract_masks_with_cellpose(
     Runs Cellpose segmentation on a numpy 3D array using the specified properties and parameters. Returns a 3D label matrix
     mask the same where zero is background and each label is a segmentation object.
     """
+    from cellpose import models
     if properties.custom_weights:
-        model = models.CellposeModel(gpu=False, pretrained_model=properties.custom_weights, net_avg=False)
+        model = models.CellposeModel(gpu=False, pretrained_model=properties.custom_weights)
     else:
-        model = models.CellposeModel(gpu=False, model_type=properties.model, net_avg=False)
+        model = models.CellposeModel(gpu=False, model_type=properties.model)
 
-    model = openvino_utils.to_openvino(model)
+    # model = openvino_utils.to_openvino(model)
 
-    mask = model.eval(
-        image[to_segment_z, ...],
-        z_axis=0,
-        channels=channels,
-        channel_axis=len(image.shape) - 1,
-        diameter=parameters.diameter,
-        flow_threshold=parameters.flow_threshold,
-        cellprob_threshold=parameters.cellprob_threshold,
-        resample=False,
-        min_size=parameters.minimum_mask_size,
-        tile=True,
-        do_3D=(properties.model_dimensions == "3D"),
-    )[0]
-    mask = mask.reshape((len(to_segment_z),) + image.shape[1:-1])
+    if properties.model_dimensions == "3D":
+        mask = model.eval(
+            image[to_segment_z, ...],
+            z_axis=0,
+            channels=channels,
+            channel_axis=len(image.shape) - 1,
+            diameter=parameters.diameter,
+            flow_threshold=parameters.flow_threshold,
+            cellprob_threshold=parameters.cellprob_threshold,
+            resample=False,
+            min_size=parameters.minimum_mask_size,
+            do_3D=True,
+        )[0]
+        mask = mask.reshape((len(to_segment_z),) + image.shape[1:-1])
+    else:
+        masks = []
+        for z_idx in to_segment_z:
+            img_slice = image[z_idx, ...]
+            mask_slice = model.eval(
+                img_slice,
+                channels=channels,
+                diameter=parameters.diameter,
+                flow_threshold=parameters.flow_threshold,
+                cellprob_threshold=parameters.cellprob_threshold,
+                resample=False,
+                min_size=parameters.minimum_mask_size,
+                do_3D=False,
+            )[0]
+            masks.append(mask_slice)
+        mask = np.stack(masks)
+
     return mask
 
 
@@ -81,7 +107,9 @@ def detect_empty_z_planes(image: np.ndarray, index_map: Dict) -> Tuple[Set, List
 
     for z_i, z_plane in enumerate(image):
         for channel_i in channel_idx:
-            if z_plane[..., channel_i].std() < 0.1:
+            std_dev = z_plane[..., channel_i].std()
+            log.info(f"Z-plane {z_i}, channel {channel_i}: std_dev = {std_dev}")
+            if std_dev < 0.1:
                 empty_z_levels.add(z_i)
     to_segment_z = list(set(range(image.shape[0])).difference(empty_z_levels))
     return empty_z_levels, to_segment_z

@@ -34,22 +34,11 @@ def extract_parameters_from_spec(spec: Dict) -> Tuple[Dict[str, IOPaths], Compil
     output_file_groups = spec["segmentation_algorithm"]["output_files"]
     for record in output_file_groups:
         for entity_type in record["entity_types_output"]:
-            if len(record["entity_types_output"]) == 1 and len(output_file_groups) == 1:
-                io_path = IOPaths(
-                    input_dir=output_fs.sep.join([output_root, record["files"]["run_on_tile_dir"]]),
-                    mosaic_output_file=output_fs.sep.join([output_root, record["files"]["mosaic_geometry_file"]]),
-                    micron_output_file=output_fs.sep.join([output_root, record["files"]["micron_geometry_file"]]),
-                )
-            else:
-                io_path = IOPaths(
-                    input_dir=output_fs.sep.join([output_root, record["files"]["run_on_tile_dir"]]),
-                    mosaic_output_file=output_fs.sep.join(
-                        [output_root, "_".join([entity_type.lower(), record["files"]["mosaic_geometry_file"]])]
-                    ),
-                    micron_output_file=output_fs.sep.join(
-                        [output_root, "_".join([entity_type.lower(), record["files"]["micron_geometry_file"]])]
-                    ),
-                )
+            io_path = IOPaths(
+                input_dir=output_fs.sep.join([output_root, record["files"]["run_on_tile_dir"]]),
+                mosaic_output_file=output_fs.sep.join([output_root, record["files"]["mosaic_geometry_file"]]),
+                micron_output_file=output_fs.sep.join([output_root, record["files"]["micron_geometry_file"]]),
+            )
             entity_type_to_paths_mapping[entity_type.lower()] = io_path
 
     m2m_tform = np.array(spec["input_data"]["micron_to_mosaic_tform"])

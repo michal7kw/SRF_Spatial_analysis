@@ -1,0 +1,9 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+**/Archive/
+**/__pycache__/
+**/*temp*/
+.DS_Store
+.vscode/
+.gitignore
+.git/
+.gitignore

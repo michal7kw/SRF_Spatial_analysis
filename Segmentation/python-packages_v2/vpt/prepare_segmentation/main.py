@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+import json
 from typing import Dict
 
 import numpy as np
@@ -8,7 +9,7 @@ from vpt_core.io.regex_tools import parse_images_str
 from vpt_core.segmentation.seg_result import SegmentationResult
 
 from vpt.prepare_segmentation.cmd_args import PrepareSegmentationArgs, parse_args, validate_prepare_segmentation_args
-from vpt.prepare_segmentation.input_tools import parse_algorithm_json, read_json
+from vpt.prepare_segmentation.input_tools import parse_algorithm_json
 from vpt.prepare_segmentation.output_tools import save_to_json
 from vpt.prepare_segmentation.tiles import make_tiles
 from vpt.prepare_segmentation.validate import validate_alg_info, validate_regex_and_alg_match
@@ -23,7 +24,8 @@ def run_prepare_segmentation(args):
     log.info("prepare segmentation started")
     validate_prepare_segmentation_args(args)
 
-    algorithm_json = read_json(args.segmentation_algorithm)
+    with open(args.segmentation_algorithm, "r") as f:
+        algorithm_json = json.load(f)
 
     m2m_transform = read_micron_to_mosaic_transform(args.input_micron_to_mosaic)
 

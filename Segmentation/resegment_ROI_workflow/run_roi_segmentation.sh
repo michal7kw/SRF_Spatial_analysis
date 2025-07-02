@@ -9,7 +9,7 @@ echo "--- Setting up environment ---"
 
 # Add the parent directory of the plugins to PYTHONPATH
 # Add the custom packages directory to the front of PYTHONPATH
-export PYTHONPATH="E:/Githubs/SPATIAL_data/Segmentation/python-packages:${PYTHONPATH}"
+export PYTHONPATH="/mnt/e/Githubs/SPATIAL_data/Segmentation/python-packages:${PYTHONPATH}"
 
 # --- Define Sample ---
 export FOLDER="p30-E165"
@@ -17,7 +17,7 @@ export REGION="R1"
 export SAMPLE="${FOLDER}_${REGION}"
 
 # --- Define Data Path (select one) ---
-export DATA_PATH="E:/Githubs/SPATIAL_data/data_${FOLDER}" 
+export DATA_PATH="/mnt/e/Githubs/SPATIAL_data/data_${FOLDER}" 
 # export DATA_PATH="/beegfs/scratch/ric.broccoli/kubacki.michal/SPATIAL_data/data_${FOLDER}"
 
 # --- Define Custom Segmentation Configuration ---
@@ -114,16 +114,20 @@ vpt --processes 20 derive-entity-metadata \
     --output-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
     --overwrite
 
-# --- Step 8: Update VZG File with ROI Segmentation ---
-echo "--- Step 8: Updating VZG file ---"
-# rm -rf vzg_build_temp
-vpt --processes 20 update-vzg \
-    --input-vzg "${DATA_PATH}/${REGION}/data.vzg2" \
-    --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
-    --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
-    --input-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
-    --output-vzg "${ROI_OUTPUT_DIR}/${SAMPLE}_roi_resegmented.vzg2" \
-    --temp-path "${ROI_OUTPUT_DIR}/vzg_build_temp" \
-    --overwrite
+# # --- Step 8: Update VZG File with ROI Segmentation ---
+# echo "--- Step 8: Updating VZG file ---"
 
-echo "--- ROI segmentation workflow finished successfully! ---"
+# # FIX: Add this line to remove the temporary directory before running the update
+# echo "--- Cleaning up temporary directory before VZG update ---"
+# rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp"
+
+# vpt update-vzg \
+#     --input-vzg "${DATA_PATH}/${REGION}/data.vzg2" \
+#     --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
+#     --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
+#     --input-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
+#     --output-vzg "${ROI_OUTPUT_DIR}/${SAMPLE}_roi_resegmented.vzg2" \
+#     --temp-path "${ROI_OUTPUT_DIR}/vzg_build_temp" \
+#     --overwrite
+
+# echo "--- ROI segmentation workflow finished successfully! ---"

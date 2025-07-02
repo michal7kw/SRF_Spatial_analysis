@@ -25,9 +25,16 @@ class EmptySegmentation(SegmentationBase):
 
 
 def get_seg_implementation(seg_name: str) -> SegmentationBase:
-    package_name = f"vpt_plugin_{seg_name.lower()}"
+    # Handle the specific case of the v2 cellpose plugin
+    if seg_name.lower() == 'cellpose':
+        package_name = "vpt_plugin_cellpose2"
+    else:
+        package_name = f"vpt_plugin_{seg_name.lower()}"
+    
     try:
         m = import_module(".segment", package=package_name)
         return getattr(m, "SegmentationMethod")
-    except Exception:
+    except Exception as e:
+        # Provide a meaningful error message
+        print(f"ERROR: Could not load segmentation plugin '{seg_name}' from package '{package_name}'. Reason: {e}")
         return EmptySegmentation()

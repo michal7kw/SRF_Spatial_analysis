@@ -5,11 +5,17 @@
 
 # --- Step 1: Environment Setup ---
 echo "--- Setting up environment ---"
+export CUDA_VISIBLE_DEVICES="-1"
+export FORCE_CPU="true"
+export CELLPOSE_GPU="0"
 # conda activate vizgen
 
 # Add the parent directory of the plugins to PYTHONPATH
 # Add the custom packages directory to the front of PYTHONPATH
-export PYTHONPATH="E:/Githubs/SPATIAL_data/Segmentation/python-packages_v2:${PYTHONPATH}"
+export PYTHONPATH="/mnt/e/Githubs/SPATIAL_data/Segmentation/python-packages_v2:${PYTHONPATH}"
+
+# Allow experimental features (needed for multiple outputs)
+export VPT_EXPERIMENTAL="true"
 
 # --- Define Sample ---
 export FOLDER="p30-E165"
@@ -17,13 +23,14 @@ export REGION="R1"
 export SAMPLE="${FOLDER}_${REGION}"
 
 # --- Define Data Path (select one) ---
-export DATA_PATH="E:/Githubs/SPATIAL_data/data_${FOLDER}" 
+export DATA_PATH="/mnt/e/Githubs/SPATIAL_data/data_${FOLDER}" 
 # export DATA_PATH="/beegfs/scratch/ric.broccoli/kubacki.michal/SPATIAL_data/data_${FOLDER}"
 
 # --- Define Custom Segmentation Configuration ---
 # This should be the name of your segmentation JSON file with the custom model
+# _default_1_ZLevel_cpsam_v2_compatible_nuclei
+# _default_1_ZLevel_cpsam_v2_compatible
 export CONFIG_NAME="${SAMPLE}_default_1_ZLevel_cpsam_v2_compatible"
-
 export CONFIG_DIR="../Vpt-segmentation" # Assumes JSON is in the Vpt-segmentation folder
 export CONFIG_FILE_NAME="${CONFIG_DIR}/${CONFIG_NAME}.json"
 
@@ -38,10 +45,15 @@ export ROI_SPEC_FILE="${ROI_OUTPUT_DIR}/segmentation_specification_roi.json"
 mkdir -p ${ROI_OUTPUT_DIR}
 mkdir -p logs
 
+# --- Initial cleanup: Remove any leftover temporary directories from previous runs ---
+echo "--- Cleaning up any leftover temporary directories ---"
+rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp_v2"
+rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp"
+
 # --- Step 2: Prepare Full Segmentation Specification ---
 echo "--- Step 2: Preparing full segmentation specification ---"
 vpt --processes 20 prepare-segmentation \
-    --segmentation-algorithm "${CONFIG_FILE_NAME}" \
+    --segmentation-algorithm "$(pwd)/${CONFIG_FILE_NAME}" \
     --input-images "${DATA_PATH}/${REGION}/images/mosaic_(?P<stain>[\\w|-]+)_z(?P<z>[0-9]+).tif" \
     --input-micron-to-mosaic "${DATA_PATH}/${REGION}/images/micron_to_mosaic_pixel_transform.csv" \
     --output-path "${ROI_OUTPUT_DIR}" \
@@ -116,14 +128,37 @@ vpt --processes 20 derive-entity-metadata \
     --overwrite
 
 # --- Step 8: Update VZG File with ROI Segmentation ---
-echo "--- Step 8: Updating VZG file ---"
-vpt --processes 20 update-vzg \
-    --input-vzg "${DATA_PATH}/${REGION}/data.vzg2" \
-    --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
-    --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
-    --input-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
-    --output-vzg "${ROI_OUTPUT_DIR}/${SAMPLE}_roi_resegmented.vzg2" \
-    --temp-path "${ROI_OUTPUT_DIR}/vzg_build_temp_v2" \
-    --overwrite
+# echo "--- Step 8: Updating VZG file ---"
+
+# Enhanced cleanup: Remove any existing temporary directories
+# echo "--- Cleaning up all temporary directories before VZG update ---"
+# rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp_v2"
+# rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp"
+
+# # Wait a moment to ensure filesystem operations complete
+# sleep 2
+
+# # Verify cleanup was successful
+# if [ -d "${ROI_OUTPUT_DIR}/vzg_build_temp_v2" ]; then
+#     echo "Warning: vzg_build_temp_v2 directory still exists, attempting forced removal..."
+#     chmod -R 777 "${ROI_OUTPUT_DIR}/vzg_build_temp_v2" 2>/dev/null || true
+#     rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp_v2"
+#     sleep 1
+# fi
+
+# echo "--- Starting VZG update ---"
+# vpt update-vzg \
+#     --input-vzg "${DATA_PATH}/${REGION}/data.vzg2" \
+#     --input-boundaries "${ROI_OUTPUT_DIR}/cellpose_micron_space.parquet" \
+#     --input-entity-by-gene "${ROI_OUTPUT_DIR}/cell_by_gene.csv" \
+#     --input-metadata "${ROI_OUTPUT_DIR}/cell_metadata.csv" \
+#     --output-vzg "${ROI_OUTPUT_DIR}/${SAMPLE}_roi_resegmented.vzg2" \
+#     --temp-path "${ROI_OUTPUT_DIR}/vzg_build_temp_v2" \
+#     --overwrite
+
+# --- Final cleanup: Remove temporary directories after successful completion ---
+# echo "--- Final cleanup: Removing temporary directories ---"
+# rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp_v2"
+# rm -rf "${ROI_OUTPUT_DIR}/vzg_build_temp"
 
 echo "--- ROI segmentation workflow finished successfully! ---"

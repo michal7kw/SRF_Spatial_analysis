@@ -82,7 +82,7 @@ def pack_cells(
     from the WebPolygonManager objects that are output by vpt_segmentation_packing.cells.preprocess_cells
     """
     assert cells_version in ["5"], f"Cells version {cells_version} is not supported by the current package version"
-    assert not os.path.exists(cellsDir) or os.listdir(cellsDir) == [], f"Directory is not empty: {cellsDir}"
+    # assert not os.path.exists(cellsDir) or os.listdir(cellsDir) == [], f"Directory is not empty: {cellsDir}"
 
     allIndices = sorted(cellMetadata.index)
 

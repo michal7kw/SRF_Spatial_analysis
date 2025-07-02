@@ -1,0 +1,9 @@
+{
+    "python.defaultInterpreterPath": "C:/Users/janku/miniforge3/envs/bioinf/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "quarto.render.previewType": "external",
+    "terminal.integrated.env.windows": {
+        "QUARTO_PYTHON": "C:/Users/janku/miniforge3/envs/bioinf/python.exe",
+        "CONDA_DEFAULT_ENV": "bioinf"
+    }
+}

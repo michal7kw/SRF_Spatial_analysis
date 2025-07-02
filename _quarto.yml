@@ -1,0 +1,11 @@
+# _quarto.yml
+
+project:
+  type: default
+
+# Tell Quarto to use the jupyter engine
+engine: jupyter
+
+# Specify the exact conda environment for Jupyter
+jupyter:
+  environment: bioinf

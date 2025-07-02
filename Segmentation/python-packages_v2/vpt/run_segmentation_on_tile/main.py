@@ -30,19 +30,24 @@ def get_tile_segmentation(seg_spec: SegSpec, window_info: Tuple[int, int, int, i
             result=task.entity_types_detected,
             images=images,
         )
-
+ 
         # Remove images from memory once the geometries are produced
         del images
-
+ 
         res_num = len(task.entity_types_detected)
-        if not hasattr(seg_result, "__iter__"):
+        
+        results_to_process: list
+        if isinstance(seg_result, SegmentationResult):
             if res_num > 1:
                 raise ValueError(
                     f"Segmentation result for task {task.task_id} should be iterable and have " f"{res_num} elements"
                 )
-            seg_result = [seg_result]
+            results_to_process = [seg_result]
+        else:
+            results_to_process = list(seg_result)
 
-        for i, entity_result in enumerate(seg_result):
+        for i, entity_result in enumerate(results_to_process):
+            log.info(f"Initial segmentation for entity {i} produced {len(entity_result.df.index)} polygons")
             entity_type = task.entity_types_detected[i]
             tasks_result.append(
                 postprocess_seg_result(
@@ -55,7 +60,7 @@ def get_tile_segmentation(seg_spec: SegSpec, window_info: Tuple[int, int, int, i
                     seg_spec.experiment_properties.all_z_indexes,
                 )
             )
-
+ 
     return tasks_result
 
 
@@ -67,16 +72,18 @@ def postprocess_seg_result(
         log.info("fuze across z")
         seg_result.update_column(SegmentationResult.z_index_field, lambda i: task.z_layers[i])
         seg_result.fuse_across_z()
+        log.info(f"After fusing, {len(seg_result.df.index)} polygons remain")
         seg_result.replicate_across_z(z_indexes)
-
+ 
     seg_result.transform_geoms(get_upscale_matrix(scale[0], scale[1]))
     log.info("remove edge polys")
     seg_result.remove_edge_polys((window_info[2],) * 2)
+    log.info(f"After removing edge polygons, {len(seg_result.df.index)} polygons remain")
     seg_result.set_entity_type(entity_type)
-
+ 
     if seg_result.df[seg_result.cell_id_field].gt(seg_result.MAX_ENTITY_ID).any():
         raise OverflowError(f"Tile segmentation could not have more than {seg_result.MAX_ENTITY_ID} entities")
-
+ 
     return SegmentationResult.reindex_by_task([seg_result], [task.task_id])[0]
 
 
@@ -99,6 +106,7 @@ def segmentation_on_tile(seg_spec: SegSpec, tile_index: int) -> List[Segmentatio
     for i in range(len(tasks_result)):
         tasks_result[i].translate_geoms(window_info[0], window_info[1])
         tasks_result[i].transform_geoms(mosaic_to_micron_matrix)
+    log.info(f"Final result has {len(tasks_result[0].df.index)} polygons before saving")
     return tasks_result
 
 
