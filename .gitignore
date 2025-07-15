@@ -28,6 +28,17 @@ Segmentation/resegment_ROI_workflow/vzg_build_temp/
 Segmentation/Vpt-segmentation/image_patches/old/
 *.npy
 **/*temp/
+# Large image files
+data_p30-E165/image_patches/models/
+data_p30-E165/image_patches/*_seg.npy
+data_p30-E165/image_patches/R1_patch_*.png
+data_p0-p7/image_patches/
+**/models/
+**/*_seg.npy
+**/*.model
+**/*.h5
+**/*.pkl
+**/*.pickle
 Segmentation/resegment_ROI_workflow/p30-E165_R1_default_1_ZLevel_cpsam_v2_compatible_roi_analysis
 Segmentation/resegment_ROI_workflow/p30-E165_R1_default_1_ZLevel_cpsam_roi_analysis
 Segmentation/resegment_ROI_workflow/cpsam
