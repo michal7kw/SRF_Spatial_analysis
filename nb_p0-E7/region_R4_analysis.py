@@ -1,7 +1,6 @@
 # %% [markdown]
 # # MERSCOPE Region R3 Analysis
 
-
 # %%
 # Import necessary libraries
 import sys
@@ -9,18 +8,17 @@ import os
 import scanpy as sc
 import anndata as ad
 import pandas as pd
-import geopandas as gpd # For potential .parquet file with geometries
+import geopandas as gpd
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg # For displaying images
+import matplotlib.image as mpimg
 import seaborn as sns
-import numpy as np # For calculations if needed
-import squidpy
 import warnings
 from shapely import wkt
+import numpy as np
 
 # Add the project root to the Python path
 # script_dir = os.path.dirname(__file__)
-script_dir = "E:/Githubs/SPATIAL_data/p0"
+script_dir = "E:/Githubs/STF_Spatial_analysis/nb_p0-E7"
 project_root = os.path.abspath(os.path.join(script_dir, '..'))
 sys.path.append(project_root)
 
@@ -34,17 +32,11 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 # sc.settings.set_figure_params(dpi=100, frameon=True, figsize=(6, 6), facecolor='white')
 
 # %%
-# Custom volcano plot for scanpy differential gene expression results
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-import pandas as pd
-
-
-# %%
 # Define file paths
-base_path = '../202504111150_Sessa-p0-p7_VMSC10702/R4'
-h5ad_file = os.path.join(base_path, '202504111150_Sessa-p0-p7_VMSC10702_region_R4.h5ad')
+GROUP = "p0-p7"
+REGION = "R4"
+base_path = f'../DATA/{GROUP}/{REGION}'
+h5ad_file = os.path.join(base_path, 'data.h5ad')
 roi_csv_file_name = 'p0_R4_ROI_28-05-25_17-01_geometry.csv'
 roi_geometry_file_path = os.path.join(base_path, roi_csv_file_name)
 summary_image_file = os.path.join(base_path, 'summary.png')
@@ -56,6 +48,7 @@ plot_enable = True
 # %%
 # Load the .h5ad file
 adata = sc.read_h5ad(h5ad_file)
+adata
 
 # %%
 keep_genes = [x for x in adata.var.index.tolist() if 'Blank' not in x]
@@ -120,7 +113,7 @@ if 'cell_boundaries_gdf' in locals() and cell_boundaries_gdf is not None and has
 else:
     print("Warning: cell_boundaries_gdf not found or has no CRS. Assuming planar coordinates for ROIs.")
 
-# %%   
+# %%
 roi_gdf = gpd.GeoDataFrame(roi_polygons_df, geometry='geometry', crs=current_crs)
 print("Successfully converted ROI geometries to GeoDataFrame.")
 print("ROI GeoDataFrame Head:")
@@ -201,7 +194,7 @@ if plot_enable:
 
 # %% [markdown]
 # # Differential Gene Expression (DGE) Analysis between ROIs
-#
+# 
 # This section performs differential gene expression analysis between two selected ROIs.
 # It assumes that `adata` (the AnnData object with gene expression) and
 # `cells_in_rois_gdf` (GeoDataFrame with cells selected by ROIs and their group assignments)
@@ -255,7 +248,7 @@ if len(valid_intersected_ids_str) > 0: print(f"Debug: Common string IDs example:
 for cell_id_str_from_intersection in valid_intersected_ids_str:
     if cell_id_str_from_intersection in adata.obs.index:
             adata.obs.loc[cell_id_str_from_intersection, 'roi_assignment'] = cell_to_roi_map[cell_id_str_from_intersection]
-        
+
 # %%
 # Check how many cells were assigned
 print(f"Cells assigned to ROIs in adata.obs: \n{adata.obs['roi_assignment'].value_counts()}")
@@ -317,3 +310,5 @@ print(summary_df.head(20))
 
 # %%
 print("\n--- End of Script ---")
+
+
