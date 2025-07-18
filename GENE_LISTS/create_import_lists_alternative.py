@@ -111,11 +111,10 @@ for file in gene_group_files:
     print(f"Number of genes overwritten: {number_of_overlaps}")
     print(f"Genes overwritten: {', '.join(genes_overwritten)}")
 
-    # Convert the index back to a column
-    # Drop the temporary lowercase index column before resetting index
-    main_df.drop(columns=['gene name'], inplace=True)
+    # Convert the index back to a column, preserving original case
+    # Reset index to get the lowercase column back, then drop it
     main_df.reset_index(inplace=True)
-    main_df.rename(columns={'gene name_lower': 'gene name'}, inplace=True)
+    main_df.drop(columns=['gene name_lower'], inplace=True)
     
     # Reorder the DataFrame columns to match the required format
     main_df = main_df[correct_column_order]

@@ -2,7 +2,6 @@
 *.h5ad
 *.vzg2
 *.parquet
-*.csv
 *.hdf5
 *.html
 *.zip
