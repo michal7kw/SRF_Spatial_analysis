@@ -87,10 +87,10 @@ for file in gene_group_files:
             
             print(f"    - Assigned {genes_found_count} of {len(gene_list)} genes to this group.")
 
-            # Convert the index back to a column
-            current_output_df.drop(columns=['gene name'], inplace=True)
+            # Convert the index back to a column, preserving original case
+            # Reset index to get the lowercase column back, then drop it
             current_output_df.reset_index(inplace=True)
-            current_output_df.rename(columns={'gene name_lower': 'gene name'}, inplace=True)
+            current_output_df.drop(columns=['gene name_lower'], inplace=True)
             
             # Reorder the DataFrame columns to match the required format
             current_output_df = current_output_df[correct_column_order]
